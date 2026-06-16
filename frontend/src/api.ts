@@ -29,7 +29,7 @@ export async function getHealth(): Promise<Health> {
 }
 
 export async function sendChat(
-  token: string,
+  token: string | null,
   message: string,
   sessionId: string | null,
 ): Promise<ChatResponse> {
@@ -46,10 +46,12 @@ export async function sendChat(
 }
 
 export async function sendFeedback(
-  token: string,
+  token: string | null,
   sessionId: string,
   messageId: string,
   helpful: boolean,
+  comment?: string,
+  contact?: string,
 ): Promise<void> {
   return parseResponse(
     await fetch(`${apiBase}/chat/feedback`, {
@@ -59,13 +61,15 @@ export async function sendFeedback(
         session_id: sessionId,
         message_id: messageId,
         helpful,
+        comment,
+        contact,
       }),
     }),
   );
 }
 
-function authHeaders(token: string): HeadersInit {
-  return { Authorization: `Bearer ${token}` };
+function authHeaders(token: string | null): HeadersInit {
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export async function login(email: string, password: string): Promise<AuthSession> {

@@ -53,6 +53,19 @@ nav { display: grid; gap: 6px; }
 .account-card strong { font-size: 11px; }
 .account-card span { color: #a99f98; font-size: 9px; margin-top: 2px; }
 .account-card button { border: 0; background: transparent; color: #c8bdb5; padding: 5px; }
+.admin-login-link {
+  margin-top: auto;
+  border: 1px solid #5c5048;
+  background: #2f2824;
+  color: #d8cdc4;
+  border-radius: 9px;
+  padding: 11px 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.admin-login-link:hover { background: #3a312d; color: #fff4df; }
 .workspace { padding: 38px clamp(28px, 5vw, 72px); min-width: 0; }
 .page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 25px; margin-bottom: 28px; }
 .eyebrow { color: var(--wine); font-weight: 700; letter-spacing: .13em; font-size: 10px; }

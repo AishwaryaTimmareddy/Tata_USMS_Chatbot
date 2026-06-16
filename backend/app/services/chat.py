@@ -49,9 +49,12 @@ class ChatService:
     async def answer(self, request: ChatRequest, claims: dict) -> ChatResponse:
         started = time.perf_counter()
         session_id = request.session_id or str(uuid.uuid4())
+        is_anonymous = claims.get("role") == "anonymous"
         user_id = claims.get("oid") or claims["sub"]
         openai = self.clients.openai()
-        history_task = asyncio.create_task(self._load_history(session_id, user_id))
+        history_task = asyncio.create_task(
+            self._load_history(session_id, user_id) if not is_anonymous else self._empty_history()
+        )
 
         try:
             embedding = await _retry_openai(
@@ -200,6 +203,9 @@ class ChatService:
             )
         return history
 
+    async def _empty_history(self) -> list[dict]:
+        return []
+
     async def _save_turn(
         self, request: ChatRequest, response: ChatResponse, claims: dict
     ) -> None:
@@ -221,6 +227,8 @@ class ChatService:
     async def _try_save_turn(
         self, request: ChatRequest, response: ChatResponse, claims: dict
     ) -> None:
+        if claims.get("role") == "anonymous":
+            return
         try:
             await self._save_turn(request, response, claims)
         except HttpResponseError:

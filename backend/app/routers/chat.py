@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
 
-from ..auth import require_user, user_id
+from ..auth import optional_user, require_user, user_id
 from ..azure_clients import AzureClients, get_azure_clients
 from ..config import Settings, get_settings
 from ..dependencies import require_services
@@ -24,15 +24,23 @@ router = APIRouter(prefix="/chat", tags=["chat"])
     "",
     response_model=ChatResponse,
     dependencies=[
-        Depends(require_services("azureOpenAI", "azureAISearch", "azureCosmosDB"))
+        Depends(require_services("azureOpenAI", "azureAISearch"))
     ],
 )
 async def chat(
     body: ChatRequest,
-    claims: dict = Depends(require_user),
+    claims: dict | None = Depends(optional_user),
     settings=Depends(get_settings),
     clients=Depends(get_azure_clients),
 ) -> ChatResponse:
+    if claims is None:
+        session_id = body.session_id or str(uuid.uuid4())
+        claims = {
+            "sub": f"anonymous:{session_id}",
+            "name": "Anonymous user",
+            "role": "anonymous",
+        }
+        body = body.model_copy(update={"session_id": session_id})
     return await ChatService(settings, clients).answer(body, claims)
 
 
@@ -118,7 +126,7 @@ async def conversation(
 )
 async def feedback(
     body: FeedbackRequest,
-    claims: dict = Depends(require_user),
+    claims: dict | None = Depends(optional_user),
     settings=Depends(get_settings),
     clients=Depends(get_azure_clients),
 ) -> None:
@@ -128,11 +136,13 @@ async def feedback(
     await container.create_item(
         {
             "id": str(uuid.uuid4()),
-            "userId": user_id(claims),
+            "userId": user_id(claims) if claims else f"anonymous:{body.session_id}",
+            "userType": claims.get("role", "authenticated") if claims else "anonymous",
             "sessionId": body.session_id,
             "messageId": body.message_id,
             "helpful": body.helpful,
             "comment": body.comment,
+            "contact": body.contact,
             "createdAt": datetime.now(UTC).isoformat(),
         }
     )

@@ -59,6 +59,15 @@ async def require_user(
         raise HTTPException(401, "The access token is invalid or expired.") from exc
 
 
+async def optional_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+    settings=Depends(get_settings),
+) -> dict | None:
+    if not credentials:
+        return None
+    return await require_user(credentials, settings)
+
+
 async def require_admin(claims: dict = Depends(require_user)) -> dict:
     if claims.get("role") != "admin":
         raise HTTPException(403, "Administrator permission is required.")

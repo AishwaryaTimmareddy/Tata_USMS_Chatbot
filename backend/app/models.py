@@ -59,6 +59,7 @@ class FeedbackRequest(BaseModel):
     helpful: bool
     message_id: str | None = None
     comment: str | None = Field(default=None, max_length=1000)
+    contact: str | None = Field(default=None, max_length=254)
 
 
 class ConversationSummary(BaseModel):
