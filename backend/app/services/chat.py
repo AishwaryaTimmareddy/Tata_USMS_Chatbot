@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 from azure.core.exceptions import HttpResponseError
 from fastapi import HTTPException
+from openai import APIError
 from azure.search.documents.models import VectorizedQuery
 
 from ..azure_clients import AzureClients
@@ -22,6 +23,24 @@ Keep the answer concise and useful. Refer to sources using [1], [2], etc.
 Do not claim that you can track, cancel, modify, or transact on an order."""
 
 
+def _openai_error_status(exc: APIError) -> int:
+    return int(getattr(exc, "status_code", 0) or 0)
+
+
+async def _retry_openai(operation):
+    last_error = None
+    for delay in (0, 2, 5):
+        if delay:
+            await asyncio.sleep(delay)
+        try:
+            return await operation()
+        except APIError as exc:
+            last_error = exc
+            if _openai_error_status(exc) != 429:
+                raise
+    raise last_error
+
+
 class ChatService:
     def __init__(self, settings: Settings, clients: AzureClients):
         self.settings = settings
@@ -34,28 +53,39 @@ class ChatService:
         openai = self.clients.openai()
         history_task = asyncio.create_task(self._load_history(session_id, user_id))
 
-        embedding = await openai.embeddings.create(
-            model=self.settings.azure_openai_embedding_deployment,
-            input=request.message,
-        )
+        try:
+            embedding = await _retry_openai(
+                lambda: openai.embeddings.create(
+                    model=self.settings.azure_openai_embedding_deployment,
+                    input=request.message,
+                )
+            )
+        except APIError as exc:
+            history_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await history_task
+            status_code = 429 if _openai_error_status(exc) == 429 else 502
+            raise HTTPException(
+                status_code=status_code,
+                detail=f"Azure OpenAI embedding request failed. Azure error: {exc}",
+            ) from exc
         vector_query = VectorizedQuery(
             vector=embedding.data[0].embedding,
-            k_nearest_neighbors=8,
+            k_nearest_neighbors=4,
             fields="contentVector",
         )
 
         search_client = self.clients.search()
-        results = await search_client.search(
-            search_text=request.message,
-            vector_queries=[vector_query],
-            query_type="semantic",
-            semantic_configuration_name=self.settings.azure_search_semantic_configuration,
-            select=["content", "title", "source", "pageNumber", "category"],
-            top=3,
-        )
-
         passages: list[dict] = []
         try:
+            results = await search_client.search(
+                search_text=request.message,
+                vector_queries=[vector_query],
+                query_type="semantic",
+                semantic_configuration_name=self.settings.azure_search_semantic_configuration,
+                select=["content", "title", "source", "pageNumber", "category"],
+                top=2,
+            )
             async for result in results:
                 content = (result.get("content") or "").strip()
                 if content:
@@ -89,7 +119,7 @@ class ChatService:
                 grounded=False,
                 latency_ms=int((time.perf_counter() - started) * 1000),
             )
-            await self._save_turn(request, response, claims)
+            await self._try_save_turn(request, response, claims)
             return response
 
         context = "\n\n".join(
@@ -97,19 +127,28 @@ class ChatService:
             for index, item in enumerate(passages, 1)
         )
         history = await history_task
-        completion = await openai.chat.completions.create(
-            model=self.settings.azure_openai_chat_deployment,
-            temperature=0.1,
-            max_tokens=500,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                *history,
-                {
-                    "role": "user",
-                    "content": f"Approved sources:\n{context}\n\nQuestion: {request.message}",
-                },
-            ],
-        )
+        try:
+            completion = await _retry_openai(
+                lambda: openai.chat.completions.create(
+                    model=self.settings.azure_openai_chat_deployment,
+                    temperature=0.1,
+                    max_tokens=300,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        *history,
+                        {
+                            "role": "user",
+                            "content": f"Approved sources:\n{context}\n\nQuestion: {request.message}",
+                        },
+                    ],
+                )
+            )
+        except APIError as exc:
+            status_code = 429 if _openai_error_status(exc) == 429 else 502
+            raise HTTPException(
+                status_code=status_code,
+                detail=f"Azure OpenAI chat request failed. Azure error: {exc}",
+            ) from exc
         answer = completion.choices[0].message.content or ""
         citations = [
             Citation(
@@ -127,7 +166,7 @@ class ChatService:
             grounded=True,
             latency_ms=int((time.perf_counter() - started) * 1000),
         )
-        await self._save_turn(request, response, claims)
+        await self._try_save_turn(request, response, claims)
         return response
 
     def _container(self):
@@ -178,3 +217,13 @@ class ChatService:
                 "citations": [item.model_dump() for item in response.citations],
             }
         )
+
+    async def _try_save_turn(
+        self, request: ChatRequest, response: ChatResponse, claims: dict
+    ) -> None:
+        try:
+            await self._save_turn(request, response, claims)
+        except HttpResponseError:
+            # A history write failure should not block the answer after Search/OpenAI
+            # have already succeeded.
+            return
