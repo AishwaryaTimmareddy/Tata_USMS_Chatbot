@@ -239,21 +239,21 @@ export function ChatPanel({
           <p>Answers grounded in approved USMS product and policy documents.</p>
         </div>
         <button className="secondary-button" onClick={reset}>
-          <RotateCcw size={16} /> New conversation
+          <RotateCcw size={16} /> Clear conversation
         </button>
       </header>
 
-      <div className="chat-columns">
-        <aside className="history-card">
-          <div className="history-heading">
-            <History size={17} />
-            <strong>{authenticated ? "Previous chats" : "Session notes"}</strong>
-          </div>
-          <button className="new-chat-button" onClick={reset}>
-            + New conversation
-          </button>
-          <div className="history-list">
-            {authenticated ? (
+      <div className={authenticated ? "chat-columns" : "chat-columns public-chat"}>
+        {authenticated && (
+          <aside className="history-card">
+            <div className="history-heading">
+              <History size={17} />
+              <strong>Previous chats</strong>
+            </div>
+            <button className="new-chat-button" onClick={reset}>
+              + Start a new conversation
+            </button>
+            <div className="history-list">
               <>
                 {conversations.map((conversation) => (
                   <button
@@ -271,11 +271,9 @@ export function ChatPanel({
                 ))}
                 {!conversations.length && <p>No previous conversations yet.</p>}
               </>
-            ) : (
-              <p>Your current conversation stays only in this browser.</p>
-            )}
-          </div>
-        </aside>
+            </div>
+          </aside>
+        )}
         <div className="chat-card">
           <div className="chat-topbar">
             <div className="assistant-avatar">

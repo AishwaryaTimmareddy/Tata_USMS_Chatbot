@@ -82,6 +82,7 @@ h1 { margin: 6px 0 5px; font-size: clamp(29px, 3vw, 40px); line-height: 1.1; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 .chat-card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 16px 50px #4d34200d; overflow: hidden; }
 .chat-columns { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 14px; }
+.chat-columns.public-chat { grid-template-columns: minmax(0, 1fr); }
 .history-card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 13px; min-height: 500px; min-width: 0; overflow: hidden; }
 .history-heading { display: flex; align-items: center; gap: 7px; padding: 4px 4px 12px; color: #554b45; font-size: 12px; }
 .new-chat-button { width: 100%; border: 1px solid #c9a986; background: #fffaf3; color: var(--wine); border-radius: 8px; padding: 9px; font-size: 11px; font-weight: 600; }
