@@ -1,0 +1,16 @@
+.env
+local.settings.json
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+node_modules/
+dist/
+.vite/
+coverage/
+terraform.tfvars
+app-errors-out/
+app-logs/
+app-logs-latest/
+*.zip
+.env.example

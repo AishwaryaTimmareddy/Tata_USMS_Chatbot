@@ -1,0 +1,13 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "AzureWebJobsStorage": "",
+    "AZURE_STORAGE_CONTAINER": "knowledge",
+    "AZURE_SEARCH_ENDPOINT": "",
+    "AZURE_SEARCH_API_KEY": "",
+    "AZURE_SEARCH_INDEXER_NAME": "",
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": ""
+  }
+}
+

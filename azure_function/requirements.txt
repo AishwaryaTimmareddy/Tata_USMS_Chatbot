@@ -1,0 +1,4 @@
+azure-functions>=1.21,<2
+azure-core>=1.32,<2
+azure-identity>=1.21,<2
+azure-search-documents>=11.5,<12
