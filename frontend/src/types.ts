@@ -23,6 +23,20 @@ export type IndexerStatus = {
   warnings: string[];
 };
 
+export type IndexerRunResponse = {
+  status: string;
+  indexer: string;
+  purged?: number;
+  cleanup_warning?: string | null;
+};
+
+export type DocumentDeleteResponse = {
+  name: string;
+  status: "deleted" | "already_deleted";
+  purged: number;
+  cleanup_warning?: string | null;
+};
+
 export type ChatResponse = {
   session_id: string;
   answer: string;

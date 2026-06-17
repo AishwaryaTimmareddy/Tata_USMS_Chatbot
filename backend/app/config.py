@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     azure_openai_chat_deployment: str = ""
     azure_openai_embedding_deployment: str = ""
 
+    azure_content_safety_endpoint: str = ""
+    azure_content_safety_api_version: str = "2024-09-01"
+    azure_content_safety_block_threshold: int = 4
+
     azure_search_endpoint: str = ""
     azure_search_api_key: str = ""
     azure_search_index_name: str = ""
@@ -66,6 +70,11 @@ class Settings(BaseSettings):
                 "AZURE_SEARCH_ENDPOINT" if not self.azure_search_endpoint else "",
                 "AZURE_SEARCH_INDEX_NAME" if not self.azure_search_index_name else "",
                 "AZURE_SEARCH_INDEXER_NAME" if not self.azure_search_indexer_name else "",
+            ],
+            "azureContentSafety": [
+                "AZURE_CONTENT_SAFETY_ENDPOINT"
+                if not self.azure_content_safety_endpoint
+                else ""
             ],
             "azureBlobStorage": [
                 "AZURE_STORAGE_CONNECTION_STRING or AZURE_STORAGE_ACCOUNT_URL"

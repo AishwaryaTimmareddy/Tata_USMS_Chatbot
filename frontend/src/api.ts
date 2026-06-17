@@ -3,8 +3,10 @@ import type {
   ChatResponse,
   ConversationDetail,
   ConversationSummary,
+  DocumentDeleteResponse,
   DocumentItem,
   Health,
+  IndexerRunResponse,
   IndexerStatus,
 } from "./types";
 
@@ -134,7 +136,10 @@ export async function uploadDocument(
   );
 }
 
-export async function deleteDocument(token: string, name: string): Promise<void> {
+export async function deleteDocument(
+  token: string,
+  name: string,
+): Promise<DocumentDeleteResponse> {
   return parseResponse(
     await fetch(`${apiBase}/admin/documents/${encodeURIComponent(name)}`, {
       method: "DELETE",
@@ -187,7 +192,7 @@ export async function downloadDocument(token: string, name: string): Promise<voi
   URL.revokeObjectURL(url);
 }
 
-export async function runIndexer(token: string): Promise<void> {
+export async function runIndexer(token: string): Promise<IndexerRunResponse> {
   return parseResponse(
     await fetch(`${apiBase}/admin/reindex`, {
       method: "POST",

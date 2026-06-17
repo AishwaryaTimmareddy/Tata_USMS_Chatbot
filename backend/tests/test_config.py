@@ -6,6 +6,7 @@ def test_readiness_reports_missing_azure_configuration():
     readiness = settings.readiness()
 
     assert "AZURE_OPENAI_ENDPOINT" in readiness["azureOpenAI"]
+    assert "AZURE_CONTENT_SAFETY_ENDPOINT" in readiness["azureContentSafety"]
     assert "AZURE_SEARCH_ENDPOINT" in readiness["azureAISearch"]
     assert readiness["azureBlobStorage"]
     assert readiness["azureCosmosDB"]
@@ -17,6 +18,7 @@ def test_readiness_accepts_managed_identity_configuration():
         azure_openai_endpoint="https://example.openai.azure.com",
         azure_openai_chat_deployment="chat",
         azure_openai_embedding_deployment="embedding",
+        azure_content_safety_endpoint="https://example.cognitiveservices.azure.com",
         azure_search_endpoint="https://example.search.windows.net",
         azure_search_index_name="knowledge",
         azure_search_indexer_name="knowledge-indexer",

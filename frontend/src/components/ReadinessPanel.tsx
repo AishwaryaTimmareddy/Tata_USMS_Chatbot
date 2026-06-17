@@ -5,6 +5,7 @@ import type { Health } from "../types";
 
 const names: Record<string, string> = {
   azureOpenAI: "Azure OpenAI",
+  azureContentSafety: "Azure Content Safety",
   azureAISearch: "Azure AI Search",
   azureBlobStorage: "Azure Blob Storage",
   azureCosmosDB: "Azure Cosmos DB",

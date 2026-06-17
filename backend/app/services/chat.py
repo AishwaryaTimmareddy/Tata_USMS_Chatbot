@@ -12,6 +12,7 @@ from azure.search.documents.models import VectorizedQuery
 from ..azure_clients import AzureClients
 from ..config import Settings
 from ..models import ChatRequest, ChatResponse, Citation
+from .content_safety import ContentSafetyService
 
 SYSTEM_PROMPT = """You are the official USMS Saffron customer knowledge assistant.
 Answer only from the supplied approved source passages.
@@ -52,6 +53,8 @@ class ChatService:
         is_anonymous = claims.get("role") == "anonymous"
         user_id = claims.get("oid") or claims["sub"]
         openai = self.clients.openai()
+        content_safety = ContentSafetyService(self.settings, self.clients)
+        await content_safety.require_safe(request.message, "User prompt")
         history_task = asyncio.create_task(
             self._load_history(session_id, user_id) if not is_anonymous else self._empty_history()
         )
@@ -153,6 +156,7 @@ class ChatService:
                 detail=f"Azure OpenAI chat request failed. Azure error: {exc}",
             ) from exc
         answer = completion.choices[0].message.content or ""
+        await content_safety.require_safe(answer, "Assistant response", status_code=502)
         citations = [
             Citation(
                 title=item.get("title") or "Approved document",

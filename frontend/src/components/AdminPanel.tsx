@@ -81,11 +81,29 @@ export function AdminPanel({ token }: { token: string }) {
 
   async function remove(name: string) {
     if (!window.confirm(`Remove ${name} from the approved repository?`)) return;
+    setBusy(true);
+    setError("");
     try {
-      await deleteDocument(token, name);
-      setDocuments((current) => current.filter((item) => item.name !== name));
+      const result = await deleteDocument(token, name);
+      setDocuments(await listDocuments(token));
+      if (result.cleanup_warning) {
+        setNotice(`${name} removed from storage.`);
+        setError(result.cleanup_warning);
+      } else {
+        const cleanupText = result.purged
+          ? ` Removed ${result.purged} search chunk${result.purged === 1 ? "" : "s"}.`
+          : " No matching search chunks were found.";
+        setNotice(`${name} removed.${cleanupText}`);
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Delete failed.");
+      try {
+        setDocuments(await listDocuments(token));
+      } catch {
+        setDocuments((current) => current.filter((item) => item.name !== name));
+      }
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -94,8 +112,13 @@ export function AdminPanel({ token }: { token: string }) {
     setIndexing(true);
     setError("");
     try {
-      await runIndexer(token);
-      setNotice("Azure AI Search indexing has started.");
+      const result = await runIndexer(token);
+      const cleanupText = result.purged
+        ? ` Removed ${result.purged} stale index chunk${result.purged === 1 ? "" : "s"}.`
+        : "";
+      setNotice(
+        result.cleanup_warning || `Azure AI Search indexing has started.${cleanupText}`,
+      );
       await pollIndexerStatus();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Indexer could not start.");
