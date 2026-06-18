@@ -88,7 +88,7 @@ async def purge_document_from_search(
     deleted_count = 0
     search_filter = search_file_filter(title, source_url)
     while True:
-        results = search_client.search(
+        results = await search_client.search(
             search_text="*",
             filter=search_filter,
             select=["id", "title", "source"],
@@ -122,7 +122,7 @@ async def purge_orphaned_search_documents(
         active_sources.add(container.get_blob_client(blob.name).url)
 
     search_client = clients.search()
-    results = search_client.search(
+    results = await search_client.search(
         search_text="*",
         select=["id", "title", "source"],
         query_type=QueryType.SIMPLE,

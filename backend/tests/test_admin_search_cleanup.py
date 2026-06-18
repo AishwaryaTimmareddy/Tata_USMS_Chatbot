@@ -38,7 +38,7 @@ class FakeSearchClient:
             [],
         ]
 
-    def search(self, **kwargs):
+    async def search(self, **kwargs):
         self.search_calls.append(kwargs)
         return AsyncResults(self.responses.pop(0))
 
