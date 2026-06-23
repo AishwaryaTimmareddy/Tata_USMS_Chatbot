@@ -14,7 +14,9 @@ if settings.applicationinsights_connection_string:
     from azure.monitor.opentelemetry import configure_azure_monitor
 
     configure_azure_monitor(
-        connection_string=settings.applicationinsights_connection_string
+        connection_string=settings.applicationinsights_connection_string,
+        instrumentation_options={"fastapi": {"enabled": False}},
+        sampling_ratio=1.0,
     )
 
 
@@ -32,6 +34,11 @@ app = FastAPI(
     docs_url=None if settings.app_env == "production" else "/docs",
     redoc_url=None if settings.app_env == "production" else "/redoc",
 )
+if settings.applicationinsights_connection_string:
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+    FastAPIInstrumentor.instrument_app(app, excluded_urls="/api/health")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.origins,

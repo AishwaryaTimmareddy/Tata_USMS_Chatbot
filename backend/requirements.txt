@@ -10,6 +10,7 @@ azure-search-documents>=11.5,<12
 azure-storage-blob>=12.25,<13
 azure-cosmos>=4.9,<5
 azure-monitor-opentelemetry>=1.6,<2
+opentelemetry-instrumentation-fastapi>=0.57b0,<1
 PyJWT[crypto]>=2.10,<3
 pwdlib[argon2]>=0.2,<1
 httpx>=0.28,<1
