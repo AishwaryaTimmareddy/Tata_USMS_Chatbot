@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from .azure_clients import get_azure_clients
 from .config import get_settings
 from .routers import admin, auth, chat
 
@@ -22,7 +23,13 @@ if settings.applicationinsights_connection_string:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    yield
+    clients = get_azure_clients()
+    try:
+        await clients.warm_credentials()
+        yield
+    finally:
+        await clients.close()
+        get_azure_clients.cache_clear()
 
 
 app = FastAPI(

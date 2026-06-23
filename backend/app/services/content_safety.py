@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-import aiohttp
 from azure.core.exceptions import AzureError
 from fastapi import HTTPException
 
@@ -48,17 +47,20 @@ class ContentSafetyService:
             "outputType": "FourSeverityLevels",
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers) as response:
-                body = await response.json(content_type=None)
-                if response.status >= 400:
-                    raise HTTPException(
-                        status_code=502,
-                        detail=(
-                            "Azure Content Safety analysis failed. "
-                            f"Azure status: {response.status}; response: {body}"
-                        ),
-                    )
+        async with self.clients.http().post(
+            url,
+            json=payload,
+            headers=headers,
+        ) as response:
+            body = await response.json(content_type=None)
+            if response.status >= 400:
+                raise HTTPException(
+                    status_code=502,
+                    detail=(
+                        "Azure Content Safety analysis failed. "
+                        f"Azure status: {response.status}; response: {body}"
+                    ),
+                )
 
         blocked_categories = [
             item.get("category", "unknown")
