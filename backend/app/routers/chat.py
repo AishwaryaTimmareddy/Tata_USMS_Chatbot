@@ -16,6 +16,7 @@ from ..models import (
     FeedbackRequest,
 )
 from ..services.chat import ChatService
+from ..services.data_masking import mask_citation_payloads, mask_sensitive_data
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -70,7 +71,7 @@ async def history(
             item["sessionId"],
             {
                 "session_id": item["sessionId"],
-                "title": item["question"][:80],
+                "title": mask_sensitive_data(item["question"])[:80],
                 "updated_at": item["createdAt"],
                 "message_count": 0,
             },
@@ -109,9 +110,9 @@ async def conversation(
             ConversationTurn(
                 id=item["id"],
                 created_at=item["createdAt"],
-                question=item["question"],
-                answer=item["answer"],
-                citations=item.get("citations", []),
+                question=mask_sensitive_data(item["question"]),
+                answer=mask_sensitive_data(item["answer"]),
+                citations=mask_citation_payloads(item.get("citations", [])),
                 grounded=item.get("grounded", False),
                 latency_ms=item.get("latencyMs", 0),
             )

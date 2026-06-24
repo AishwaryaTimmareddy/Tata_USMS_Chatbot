@@ -14,6 +14,7 @@ from ..azure_clients import AzureClients
 from ..config import Settings
 from ..models import ChatRequest, ChatResponse, Citation
 from .content_safety import ContentSafetyService
+from .data_masking import mask_sensitive_data
 
 SYSTEM_PROMPT = """You are the official USMS Saffron customer knowledge assistant.
 Answer only from the supplied approved source passages.
@@ -166,7 +167,7 @@ class ChatService:
                 status_code=status_code,
                 detail=f"Azure OpenAI chat request failed. Azure error: {exc}",
             ) from exc
-        answer = completion.choices[0].message.content or ""
+        answer = mask_sensitive_data(completion.choices[0].message.content or "")
         with tracer.start_as_current_span("chat.response_safety"):
             await content_safety.require_safe(
                 answer,
@@ -178,7 +179,7 @@ class ChatService:
                 title=item.get("title") or "Approved document",
                 source=item.get("source") or "",
                 page_number=item.get("pageNumber"),
-                excerpt=item["content"][:240],
+                excerpt=mask_sensitive_data(item["content"][:240]),
             )
             for item in passages
         ]
@@ -217,8 +218,8 @@ class ChatService:
         for item in reversed(items):
             history.extend(
                 [
-                    {"role": "user", "content": item["question"]},
-                    {"role": "assistant", "content": item["answer"]},
+                    {"role": "user", "content": mask_sensitive_data(item["question"])},
+                    {"role": "assistant", "content": mask_sensitive_data(item["answer"])},
                 ]
             )
         return history
@@ -236,8 +237,8 @@ class ChatService:
                 "userName": claims.get("name") or claims.get("preferred_username"),
                 "sessionId": response.session_id,
                 "createdAt": datetime.now(UTC).isoformat(),
-                "question": request.message,
-                "answer": response.answer,
+                "question": mask_sensitive_data(request.message),
+                "answer": mask_sensitive_data(response.answer),
                 "grounded": response.grounded,
                 "latencyMs": response.latency_ms,
                 "citations": [item.model_dump() for item in response.citations],
