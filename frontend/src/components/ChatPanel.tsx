@@ -415,7 +415,7 @@ export function ChatPanel({
             </button>
           </form>
           <p className="disclaimer">
-            AI-generated answers may require verification. This assistant cannot access or modify orders.
+            These responses are AI generated. AI-generated answers may require verification. This assistant cannot access or modify orders.
           </p>
         </div>
       </div>
